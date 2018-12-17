@@ -19,6 +19,9 @@ https://jsfiddle.net/7a2ngzm0/ в примере по ссылке я напис
 5) наверняка там закралось ещё не мало багов, исправьте, если найдёте
 6) сделайте возможность, чтобы иногда первым ходил компьютер или просто это было случайно (50% первый игрок, 50% компьютер)
 */
+
+
+
 //"use strict";
 console.clear();
 const CELL_SIZE = 100;
@@ -30,20 +33,53 @@ const CELL_STYLES = {
   fontSize : "50px"
 };
 const SIZE = 3;
+const HOT_SPOT = Math.round((SIZE - 1) / 2);
 const positions = [];
-const cells = [];
+const PLAYER = 1;
+const AI = -1;
+const FREE_CELL = 0;
 
-createField(SIZE);
+const weights = []; 
+/*
+  weights массив весов. для удобства пробега по нему - одномерный.
+  SIZE элементов рядов, обратная диагональ, SIZE элементов колонок и главная диагональ.
+  при SIZE == 3 , length == 7
+*/
+//define key indexes
+const MAIN_DIAGONAL =  SIZE * 2 + 1;
+const BACK_DIAGONAL =  SIZE;
+const COLUMNS =  SIZE + 1;
+
+let steps = 0;
+
+const cells = createField(SIZE);
+
+
+// define who`s turn and symbol;
+/*
+const PLAYER_SYMBOL = Math.random < 0.5 ? "X" : "O";
+const AI_SYMBOL = PLAYER_SYMBOL == "X" ? "O" : "X";
+*/
+const PLAYER_SYMBOL =  "X";
+const AI_SYMBOL =  "O";
+
+
+
+//const emptyCells = [];
 
 function createField(size) {
   const fieldContainer = document.getElementById("field");
 	fieldContainer.style.position = "relative";
   let counter = 0;
+  const cells = [];
+  weights.push(0, 0);
   for (let i = 0; i < size; i++) {
-  	positions[i] = [];
+    positions[i] = [];
+    weights.push(0, 0);
   	for (let j = 0; j < size; j++){
-    	positions[i][j] = -1;
-    	counter++;
+    	positions[i][j] = FREE_CELL;
+      counter++;
+      
   		cells.push(cell(fieldContainer, i, j, counter));      
     }  	
   }
@@ -72,67 +108,116 @@ function setStyle(obj, styles){
 }
 
 function listener(event, i, j, cell) {
-  cell.textContent = "X";
-  positions[i][j] = 1;
-	const win = checkField(1);
+    //  - баг затирания 
+    if (cell.textContent == PLAYER_SYMBOL || cell.textContent == AI_SYMBOL ){
+        return;
+    }
+  cell.textContent = PLAYER_SYMBOL;
+  positions[i][j] = PLAYER;
+  steps++;
+  calcWeights(i, j, PLAYER);
+
+	const win = checkField(PLAYER);
   win ? console.log("player WIN") : computerStep() ? console.log("computer WIN") : console.log("next run");
 }
 
 function computerStep() {
-	const pos = checkFree();
+  const pos = checkFree();
+  //  const pos = aiMove();
   if(pos) {
-  	cells[pos[0] * SIZE + pos[1]].textContent = "O"
+  	cells[pos[0] * SIZE + pos[1]].textContent = AI_SYMBOL
   } else {
   	console.log("DRAW");
     return;
   }
-  positions[pos[0]][pos[1]] = 0;
-	const win = checkField(0);
+  positions[pos[0]][pos[1]] = AI;
+  steps++;
+  calcWeights(pos[0], pos[1], AI);
+	const win = checkField(AI);
   return win;
 }
 
+// пересчет массива "весов" каждой линии.
+function calcWeights(i, j, num){
+  weights[i] += num;
+  weights[j + COLUMNS] += num;
+  if ( i == j){
+    weights[MAIN_DIAGONAL] += num;
+  }
+   if ( i == SIZE - j - 1){
+    weights[BACK_DIAGONAL] += num;
+  }
+}
+
+
+function aiMove() {
+  let theAiCell = false;
+
+  if (steps >= SIZE * SIZE){
+    return theAiCell;
+  }
+
+  if (positions[HOT_SPOT][HOT_SPOT] == 0){  
+    return [].push([HOT_SPOT][HOT_SPOT]);
+  }
+
+  let mostDagerousLine = 0; let max = weights[0];
+  for (let i = 1; i < weights.length; i++) {
+    mostDagerousLine = weights[i] > max ? (max = weights[i], i)  : mostDagerousLine;
+  }
+  
+  return theAiCell;
+}
+
 function checkFree() {
-	const freeCells = [];
+  const freeCells = [];
+  let mostDagerousLine = 0; let max = weights[0];
+  for (let i = 1; i < weights.length; i++) {
+    mostDagerousLine = weights[i] > max ? (max = weights[i], i)  : mostDagerousLine;
+    
+  }
+
   positions.forEach(function(row, i) {
   	row.forEach(function(val, j) {
-    	if(positions[i][j] == -1){
+    	if(positions[i][j] == FREE_CELL){
       	freeCells.push([i, j]);
       }
     });
   });
   const freeCell = freeCells[Math.floor(Math.random() * freeCells.length)];
-  return freeCell;
+   return freeCell;
 }
 
 function checkField(value) {
-	let win = false;
-	let horizont = 0, vertical = 0, diagonalOne = 0, diagonalTwo = 0;
-	for (let i = 0; i < SIZE; i++) {  	
-    for (let j = 0; j < SIZE; j++) {
-    	if(positions[i][j] == value) {
-      	horizont++;        
-      }
-      for(let l = 0; l < SIZE; l++){
-      	if(positions[l][j] == value) {
-      		vertical++;        
-      	}
-      }
-      if(i == j && positions[i][j] == value) {
-      	diagonalOne++;        
-      }
-      if(i == (SIZE - j - 1) && positions[i][j] == value) {
-      	diagonalTwo++;        
-      }
-      if(horizont == SIZE || vertical == SIZE || diagonalOne == SIZE || diagonalTwo == SIZE) {
-      	win = true;
-      }
-      vertical = 0;
-    }
-    horizont = 0;
-  }
+  let win = weights.some( w => w == value * SIZE);
+
+	// let horizont = 0, vertical = 0, diagonalOne = 0, diagonalTwo = 0;
+	// for (let i = 0; i < SIZE; i++) {  	
+  //   for (let j = 0; j < SIZE; j++) {
+  //   	if(positions[i][j] == value) {
+  //     	horizont++;        
+  //     }
+  //     for(let l = 0; l < SIZE; l++){
+  //     	if(positions[l][j] == value) {
+  //     		vertical++;        
+  //     	}
+  //     }
+  //     if(i == j && positions[i][j] == value) {
+  //     	diagonalOne++;        
+  //     }
+  //     if(i == (SIZE - j - 1) && positions[i][j] == value) {
+  //     	diagonalTwo++;        
+  //     }
+  //     if(horizont == SIZE || vertical == SIZE || diagonalOne == SIZE || diagonalTwo == SIZE) {
+  //     	win = true;
+  //     }
+  //     vertical = 0;
+  //   }
+  //   horizont = 0;
+  // }
   return win;
 }
-
+/*  checkWin() лишняя можно и удалить */
 function checkWin() {
 	const win = false;
   return win;
