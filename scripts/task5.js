@@ -122,8 +122,8 @@ function listener(event, i, j, cell) {
 }
 
 function computerStep() {
-  const pos = checkFree();
-  //  const pos = aiMove();
+//  const pos = checkFree();
+  const pos = aiMove();
   if(pos) {
   	cells[pos[0] * SIZE + pos[1]].textContent = AI_SYMBOL
   } else {
@@ -137,7 +137,7 @@ function computerStep() {
   return win;
 }
 
-// пересчет массива "весов" каждой линии.
+// пересчет массива "весов" каждой линии. после каждого хода
 function calcWeights(i, j, num){
   weights[i] += num;
   weights[j + COLUMNS] += num;
@@ -151,22 +151,57 @@ function calcWeights(i, j, num){
 
 
 function aiMove() {
-  let theAiCell = false;
+  //let theAiCell = [];
 
   if (steps >= SIZE * SIZE){
-    return theAiCell;
+    return false;
   }
 
-  if (positions[HOT_SPOT][HOT_SPOT] == 0){  
-    return [].push([HOT_SPOT][HOT_SPOT]);
+  const freeCells = [];
+  if (positions[HOT_SPOT][HOT_SPOT] == 0){
+    //const freeCells = [];  
+//    return [].push([HOT_SPOT,HOT_SPOT]);
+    return [HOT_SPOT,HOT_SPOT];
   }
+  /*
+  идея добавлять в массив свободные клетки и выбирать случайным образом хороша, 
+  особенно если размер будет хотя бы 5 на 5  и более.
+  но сделаем то же самое только по самой "опасной линии"
+
+  для 3*3 можно брать первую же свободную, но задача стоит сделать общий случай.
+  */
 
   let mostDagerousLine = 0; let max = weights[0];
   for (let i = 1; i < weights.length; i++) {
     mostDagerousLine = weights[i] > max ? (max = weights[i], i)  : mostDagerousLine;
   }
-  
-  return theAiCell;
+  //для начала научим АИ "отбиваться"
+  for (let i = 0; i < SIZE; i++) { // цикл общий. т.к. клеток линии все равно одинаковое количество
+    if (mostDagerousLine < SIZE) { //ряд
+      if(positions[mostDagerousLine][i] == FREE_CELL){
+        freeCells.push([mostDagerousLine, i]);
+      }      
+    } else if (mostDagerousLine == MAIN_DIAGONAL){
+        if(positions[i][i] == FREE_CELL){
+          freeCells.push([i, i]);
+        }      
+    } else if(mostDagerousLine == BACK_DIAGONAL){
+        if(positions[i][SIZE - i - 1] == FREE_CELL){
+          freeCells.push([i, SIZE - i - 1]);
+        }      
+    } else{ // колонка
+      if(positions[i][mostDagerousLine - COLUMNS] == FREE_CELL){
+        freeCells.push([i, mostDagerousLine - COLUMNS]);
+      }
+    };
+  }
+//имеем массив пустых клеток в опасной линии. и выбираем случайную из них.
+  const theAiCell = freeCells[Math.floor(Math.random() * freeCells.length)];
+
+
+
+
+  return theAiCell;//freeCells[Math.floor(Math.random() * freeCells.length)];
 }
 
 function checkFree() {
