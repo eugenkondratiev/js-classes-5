@@ -20,7 +20,9 @@ https://jsfiddle.net/7a2ngzm0/ в примере по ссылке я напис
 6) сделайте возможность, чтобы иногда первым ходил компьютер или просто это было случайно (50% первый игрок, 50% компьютер)
 */
 
-
+// остались баги АИ в некоторых конкретных позициях, но в целом работает адекватно. и еще надо сделать пункт 6.
+// нет заперта ходов после чьей-то победы.
+// иногда все таки выбирает две подряд занятых строки.  сделать выбор в цикле while? :(
 
 //"use strict";
 console.clear();
@@ -118,6 +120,7 @@ function listener(event, i, j, cell) {
   cell.textContent = PLAYER_SYMBOL;
   positions[i][j] = PLAYER;
   steps++;
+ 
   calcWeights(i, j, PLAYER);
 
 	const win = checkField(PLAYER);
@@ -127,6 +130,8 @@ function listener(event, i, j, cell) {
 function computerStep() {
 //  const pos = checkFree();
   const pos = aiMove();
+  console.log(pos[0] + ", " + pos[1]);
+  
   if(pos) {
   	cells[pos[0] * SIZE + pos[1]].textContent = AI_SYMBOL
   } else {
@@ -147,116 +152,90 @@ function calcWeights(i, j, num){
   if ( i == j){
     weights[MAIN_DIAGONAL] += num;
   }
-   if ( i == SIZE - j - 1){
+   if ( i == (SIZE - j - 1)){
     weights[BACK_DIAGONAL] += num;
   }
+  //debugger;
 }
 
 
 function aiMove() {
-  //let theAiCell = [];
 
   if (steps >= SIZE * SIZE){
     return false;
   }
 
-  const freeCells = [];
+
   if (positions[HOT_SPOT][HOT_SPOT] == 0){
-    //const freeCells = [];  
-//    return [].push([HOT_SPOT,HOT_SPOT]);
     return [HOT_SPOT,HOT_SPOT];
   }
   /*
   идея добавлять в массив свободные клетки и выбирать случайным образом хороша, 
   особенно если размер будет хотя бы 5 на 5  и более.
-  но сделаем то же самое только по самой "опасной линии"
-
+   сделаем то же самое только по самой "опасной линии"
   для 3*3 можно брать первую же свободную, но задача стоит сделать общий случай.
   */
 
-  let mostDagerousLine = 0; let max = weights[0];
-  for (let i = 1; i < weights.length; i++) {
-    mostDagerousLine = weights[i] > max ? (max = weights[i], i)  : mostDagerousLine;
-  }
-  //для начала научим АИ "отбиваться"
+  const sortedWeights = [];
+  weights.forEach((w,i) => (sortedWeights.push(w)));
+  sortedWeights.sort((a,b) => (a - b));
+
+  let mostDangerousLine = weights.indexOf(sortedWeights[sortedWeights.length -1] );
+  let mostHopefullLine = weights.indexOf(sortedWeights[0]);
+   
+// выбор : отбиваться или попробовать победить.
+  let pickedLine = Math.abs(mostHopefullLine) > Math.abs(mostDangerousLine) && sortedWeights[0] < (1.1 - SIZE) ? mostHopefullLine : mostDangerousLine;
+  //debugger;
+  let freeCells = getFreeCellsFromLine(pickedLine);
+
+
+//имеем массив пустых клеток в опасной линии. и выбираем случайную из них.
+let theAiCell = freeCells[Math.floor(Math.random() * freeCells.length)];
+if (theAiCell != undefined){
+  return theAiCell;
+} else {
+  // выбранная линия "занята" и хода АИ не происходит.
+  // так получается из-за изменения веса диагоналей.
+
+  mostDangerousLine = weights.indexOf(sortedWeights[sortedWeights.length -2]);
+  mostHopefullLine = weights.indexOf(sortedWeights[1]);
+  pickedLine = Math.abs(mostHopefullLine) > Math.abs(mostDangerousLine) && sortedWeights[1] < -1 *(SIZE - 1.1) ? mostHopefullLine : mostDangerousLine;
+  freeCells = getFreeCellsFromLine(pickedLine);
+  //второй раз такой баг совсем маловероятен
+  theAiCell = freeCells[Math.floor(Math.random() * freeCells.length)];
+  return theAiCell;
+
+}
+
+}
+
+function getFreeCellsFromLine(pickedLine){
+  const _freeCells = [];
+
   for (let i = 0; i < SIZE; i++) { // цикл общий. т.к. клеток линии все равно одинаковое количество
-    if (mostDagerousLine < SIZE) { //ряд
-      if(positions[mostDagerousLine][i] == FREE_CELL){
-        freeCells.push([mostDagerousLine, i]);
+    if (pickedLine < SIZE) { //ряд
+      if(positions[pickedLine][i] == FREE_CELL){
+        _freeCells.push([pickedLine, i]);
       }      
-    } else if (mostDagerousLine == MAIN_DIAGONAL){
+    } else if (pickedLine == MAIN_DIAGONAL){
         if(positions[i][i] == FREE_CELL){
-          freeCells.push([i, i]);
+          _freeCells.push([i, i]);
         }      
-    } else if(mostDagerousLine == BACK_DIAGONAL){
+    } else if(pickedLine == BACK_DIAGONAL){
         if(positions[i][SIZE - i - 1] == FREE_CELL){
-          freeCells.push([i, SIZE - i - 1]);
+          _freeCells.push([i, SIZE - i - 1]);
         }      
     } else{ // колонка
-      if(positions[i][mostDagerousLine - COLUMNS] == FREE_CELL){
-        freeCells.push([i, mostDagerousLine - COLUMNS]);
+      if(positions[i][pickedLine - COLUMNS] == FREE_CELL){
+        _freeCells.push([i, pickedLine - COLUMNS]);
       }
     };
   }
-//имеем массив пустых клеток в опасной линии. и выбираем случайную из них.
-  const theAiCell = freeCells[Math.floor(Math.random() * freeCells.length)];
-
-
-
-
-  return theAiCell;//freeCells[Math.floor(Math.random() * freeCells.length)];
+  return _freeCells;
 }
 
-function checkFree() {
-  const freeCells = [];
-  let mostDagerousLine = 0; let max = weights[0];
-  for (let i = 1; i < weights.length; i++) {
-    mostDagerousLine = weights[i] > max ? (max = weights[i], i)  : mostDagerousLine;
-    
-  }
-
-  positions.forEach(function(row, i) {
-  	row.forEach(function(val, j) {
-    	if(positions[i][j] == FREE_CELL){
-      	freeCells.push([i, j]);
-      }
-    });
-  });
-  const freeCell = freeCells[Math.floor(Math.random() * freeCells.length)];
-   return freeCell;
-}
 
 function checkField(value) {
-  let win = weights.some( w => w == value * SIZE);
+  return weights.some( w => value > 0 ? w >= value * SIZE : w <= value * SIZE);
 
-	// let horizont = 0, vertical = 0, diagonalOne = 0, diagonalTwo = 0;
-	// for (let i = 0; i < SIZE; i++) {  	
-  //   for (let j = 0; j < SIZE; j++) {
-  //   	if(positions[i][j] == value) {
-  //     	horizont++;        
-  //     }
-  //     for(let l = 0; l < SIZE; l++){
-  //     	if(positions[l][j] == value) {
-  //     		vertical++;        
-  //     	}
-  //     }
-  //     if(i == j && positions[i][j] == value) {
-  //     	diagonalOne++;        
-  //     }
-  //     if(i == (SIZE - j - 1) && positions[i][j] == value) {
-  //     	diagonalTwo++;        
-  //     }
-  //     if(horizont == SIZE || vertical == SIZE || diagonalOne == SIZE || diagonalTwo == SIZE) {
-  //     	win = true;
-  //     }
-  //     vertical = 0;
-  //   }
-  //   horizont = 0;
-  // }
-  return win;
-}
-/*  checkWin() лишняя можно и удалить */
-function checkWin() {
-	const win = false;
-  return win;
 }
