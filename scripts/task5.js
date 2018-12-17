@@ -77,12 +77,15 @@ function createField(size) {
     positions[i] = [];
     weights.push(0, 0);
   	for (let j = 0; j < size; j++){
-    	positions[i][j] = FREE_CELL;
-      counter++;
-      
+      positions[i][j] = FREE_CELL;
+      counter++;      
   		cells.push(cell(fieldContainer, i, j, counter));      
-    }  	
+    }  
   }
+//увеличим веса диагоналей.
+weights[BACK_DIAGONAL] += (0.1 + Math.random() * 0.1);
+weights[MAIN_DIAGONAL] += (0.1 + Math.random() * 0.1);
+
 	return cells;
 }
 
