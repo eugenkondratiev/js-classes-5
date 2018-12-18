@@ -25,7 +25,6 @@ a.knopka:active { background: rgb(152,15,0); } // при нажатии
 */
 
 .field{
-
 	  position: "relative";
 	  left: 1px; right: 1px; top: 50px; bottom: 1px;
 	  	vertical-align: middle;

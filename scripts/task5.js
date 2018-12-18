@@ -42,6 +42,7 @@ const AI = -1;
 const FREE_CELL = 0;
 
 const weights = []; 
+const freeLines = [];
 /*
   weights массив весов. для удобства пробега по нему - одномерный.
   SIZE элементов рядов, обратная диагональ, SIZE элементов колонок и главная диагональ.
@@ -51,6 +52,7 @@ const weights = [];
 const MAIN_DIAGONAL =  SIZE * 2 + 1;
 const BACK_DIAGONAL =  SIZE;
 const COLUMNS =  SIZE + 1;
+const ROW =  0;
 
 let steps = 0;
 
@@ -65,9 +67,49 @@ const AI_SYMBOL = PLAYER_SYMBOL == "X" ? "O" : "X";
 const PLAYER_SYMBOL =  "X";
 const AI_SYMBOL =  "O";
 
+/*
+fill array of free cells, for future check for free cells in picked line.
+*/
+function createFreeLine(i = 0, type = ROW) {
+  const row = [];
+  switch(type){
+    case ROW:
+      for (let j = 0; j < SIZE; j++) {
+        row.push([i, j]);
+      } 
+      break;
+    case COLUMNS:
+      for (let j = 0; j < SIZE; j++) {
+        row.push([j, i]);
+      } 
+      break;
+    case MAIN_DIAGONAL:
+      for (let j = 0; j < SIZE; j++) {
+        row.push([j, j]);
+      } 
+      break;
+    default:
+    for (let j = 0; j < SIZE; j++) {
+      row.push([j, SIZE - j - 1]);
+    } 
 
+  }
+  return row;
+}
 
-//const emptyCells = [];
+function fillFreeLines() {
+  for (let i = 0; i < SIZE; i++) {
+    freeLines.push(createFreeLine(i, ROW));
+  }
+  freeLines.push(createFreeLine(0, BACK_DIAGONAL));
+
+  for (let j = 0; j < SIZE; j++) {
+    freeLines.push(createFreeLine(j, COLUMNS));
+  }
+
+  freeLines.push(createFreeLine(0, MAIN_DIAGONAL));
+}
+
 
 function createField(size) {
   const fieldContainer = document.getElementById("field");
@@ -81,14 +123,17 @@ function createField(size) {
     weights.push(0, 0);
   	for (let j = 0; j < size; j++){
       positions[i][j] = FREE_CELL;
-      counter++;      
+      counter++;   
   		cells.push(cell(fieldContainer, i, j, counter));      
-    }  
+    }
+
   }
 //увеличим веса диагоналей.
 weights[BACK_DIAGONAL] += (0.1 + Math.random() * 0.1);
 weights[MAIN_DIAGONAL] += (0.1 + Math.random() * 0.1);
 
+fillFreeLines();
+debugger;
 	return cells;
 }
 
