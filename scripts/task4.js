@@ -59,7 +59,8 @@ for(let i = 1; i <= calcNextYear.getPeriod(); i++ ){
 console.log(schedule);
 
 const block = document.createElement('dev');
-block.style.top = "300px";
+block.style.top = "600px";
+
  block.style.fontStyle.fontcolor = 'rgb(50, 50, 256)';
  document.body.appendChild(block);
  block.innerHTML = schedule;

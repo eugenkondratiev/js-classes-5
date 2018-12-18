@@ -71,7 +71,8 @@ const AI_SYMBOL =  "O";
 
 function createField(size) {
   const fieldContainer = document.getElementById("field");
-	fieldContainer.style.position = "relative";
+  fieldContainer.style.position = "relative";
+  fieldContainer.style.top = "40px";
   let counter = 0;
   const cells = [];
   weights.push(0, 0);
