@@ -9,13 +9,18 @@
  и в следующем году уже считается процент этой суммы. 
  То есть у нас ежегодная капитализация
 */
+const DEFAULT_FUND = 1000;
+const DEFAULT_PERCENT = 7;
+const DEFAULT_PERIOD = 10;
 
-function calcComplexPercent(current = 0, percent = 5, period = 10){
+const increaseFundWithPercent = (_fund, _percent) => (_fund * (1 + 0.01 * _percent));
+
+
+function calcComplexPercent(current = DEFAULT_FUND, percent = DEFAULT_PERCENT, period = DEFAULT_PERIOD){
         fund = current;
         currentYear = 0;
-        function calcPeriod(){
-             currentYear < period ? (currentYear++, fund *= (1 + 0.01 * percent)) : fund;
-               // console.log( currentYear.toFixed()  + "   " + fund.toFixed(2));
+        function calcPeriod(){            
+            fund = currentYear < period ? (currentYear++, increaseFundWithPercent(fund, percent)) : fund;
             return fund;
         }
 
@@ -28,25 +33,27 @@ function calcComplexPercent(current = 0, percent = 5, period = 10){
 
         return calcPeriod;
 }
-const GET_START_FUND = 'Введите сумму вклада: ';
-const GET_PERCENT = 'Введите процент годовой: ';
-const GET_PERIOD = 'Введите скрок вклада: ';
+const GET_START_FUND = 'Введите сумму вклада , грн: ';
+const GET_PERCENT = 'Введите процент годовой , %: ';
+const GET_PERIOD = 'Введите скрок вклада, лет: ';
 
 
 const calcNextYear = calcComplexPercent(
-    +prompt(GET_START_FUND, 1000), 
-    +prompt(GET_PERCENT, 5), 
-    +prompt(GET_PERIOD, 7)
+    +prompt(GET_START_FUND, DEFAULT_FUND), 
+    +prompt(GET_PERCENT, DEFAULT_PERCENT), 
+    +prompt(GET_PERIOD, DEFAULT_PERIOD)
     );
 
 let schedule = 'График накопления на Вашем счету:  <br /> \n'; //чтоб и на экране в консоли было читаемо
 
 for(let i = 1; i <= calcNextYear.getPeriod(); i++ ){
-    let yearWord = i % 10 == 1 ? '-го года' : i % 10 < 5  ? '-х лет' : '-и лет'; 
+    let yearWord = i % 10 == 1 ? '-го года' : i % 10 < 5  ? '-х лет' : '-и лет'; //выбор окончания и склонения
     calcNextYear(); 
     schedule += i < calcNextYear.getPeriod() 
-    ?`Баланс после  ${i}${yearWord}  : ${calcNextYear.getFund().toFixed(2)} грн. <br /> \n`
-    : `Конечный баланс после ${i}${yearWord} :  <b>${calcNextYear.getFund().toFixed(2)} грн. </b>`;
+    ?
+    `Баланс после  ${i}${yearWord}  : ${calcNextYear.getFund().toFixed(2)} грн. <br /> \n`
+    : 
+    `Конечный баланс после ${i}${yearWord} :  <b>${calcNextYear.getFund().toFixed(2)} грн. </b>`;
 };
 
 console.log(schedule);
