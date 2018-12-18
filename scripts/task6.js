@@ -12,12 +12,9 @@ function multiplyAll(...numbers) {
 
 
 function multiplyAllReduced(...numbers) {
-    let mult = 1;
-        numbers.reduce((mult, num) => mult * num);
-        
-    return mult;
+    return numbers.reduce((acc, num) => acc * num);
  } 
 
- console.log(multiplyAll(1, 2, 3, 4, 5));
+ console.log(multiplyAllReduced(1, 2, 3, 4, 5));
 
 
