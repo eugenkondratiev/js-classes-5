@@ -1,23 +1,26 @@
 ﻿//task 5.3
 
-const num1 = 14;
-const num2 = 4;
+const num1 = +prompt('Введите 1е число', 14);
+const num2 = +prompt('Введите 2е число', 4);
 const pow = ((a, b) => (a ** b));
 const mod =  (a, b) => ( (a - a % b) / b) ; 
 /*
 попробовал перевести на стрелочные функции. 
-еще раз убедился что поределение функции
+еще раз убедился что определение функции
 можно писать где угодно.
 
 а функциональное выражении нужно все же определять до использования. :)
 
 */
-console.log(calc(num1, num2 , add));
-console.log(calc(num1, num2 , sub));
-console.log(calc(num1, num2 , mul));
-console.log(calc(num1, num2 , div));
-console.log(calc(num1, num2 , mod));
-console.log(calc(num1, num2 , pow));
+
+/*при целочисленном делении , понятно что проверять надо являются ли 
+операнды целыми. но не стал. в ТЗ нет :) */
+console.log(`${num1} + ${num2} = ${calc(num1, num2 , add)}`);
+console.log(`${num1} - ${num2} = ${calc(num1, num2 , sub)}`);
+console.log(`${num1} * ${num2} = ${calc(num1, num2 , mul)}`);
+console.log(`${num1} / ${num2} = ${calc(num1, num2 , div)}`);
+console.log(`${num1} делить нацело на ${num2} = ${calc(num1, num2 , mod)}`);
+console.log(`${num1} в степени ${num2} = ${calc(num1, num2 , pow)}`);
 
 //============================================
 function add(a, b){

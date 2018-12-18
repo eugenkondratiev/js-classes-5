@@ -1,5 +1,7 @@
 //task 5.1
 
+console.clear;
+
 function double(x) {
     return  x * 2; //x << 1
 }
