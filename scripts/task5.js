@@ -20,9 +20,7 @@ https://jsfiddle.net/7a2ngzm0/ в примере по ссылке я напис
 6) сделайте возможность, чтобы иногда первым ходил компьютер или просто это было случайно (50% первый игрок, 50% компьютер)
 */
 
-// остались баги АИ в некоторых конкретных позициях, но в целом работает адекватно. и еще надо сделать пункт 6.
-// нет заперта ходов после чьей-то победы.
-// иногда все таки выбирает две подряд занятых строки.  сделать выбор в цикле while? :(
+//  в целом работает адекватно. и еще надо сделать пункт 6.
 
 //"use strict";
 console.clear();
@@ -57,17 +55,19 @@ const COLUMNS =  SIZE + 1;
 const ROW =  0;
 
 let steps = 0;
-
-const cells = createField(SIZE);
-
-
 // define who`s turn and symbol;
-/*
-const PLAYER_SYMBOL = Math.random < 0.5 ? "X" : "O";
+const PLAYER_SYMBOL = Math.random() > 0.5 ? "X" : "O";
 const AI_SYMBOL = PLAYER_SYMBOL == "X" ? "O" : "X";
-*/
-const PLAYER_SYMBOL =  "X";
-const AI_SYMBOL =  "O";
+
+// const PLAYER_SYMBOL =  "X";
+// const AI_SYMBOL =  "O";
+
+
+const cells = createField(SIZE); // "точка входа"
+if ( AI_SYMBOL == "X"){
+  computerStep();
+}
+
 
 /*
 fill array of free cells, for future check for free cells in picked line.
@@ -94,7 +94,6 @@ function createFreeLine(i = 0, type = ROW) {
     for (let j = 0; j < SIZE; j++) {
       row.push([j, SIZE - j - 1]);
     } 
-
   }
   return row;
 }
@@ -109,7 +108,6 @@ function releaseFreeCelllfromLine(pos, freeCellsArray) {
       freeCellsArray.splice( index, 1 );
       return;
     }
-
   }
 }
 
@@ -125,6 +123,7 @@ function fillFreeLines() {
   }
 
   freeLines.push(createFreeLine(0, MAIN_DIAGONAL));
+
 }
 //функция ищет и удаляет поле во вложенных массивах массива свободных полей 
 function releaseFreeCell(i, j, freeLines) {
@@ -166,7 +165,7 @@ weights[BACK_DIAGONAL] += (0.1 + Math.random() * 0.1);
 weights[MAIN_DIAGONAL] += (0.1 + Math.random() * 0.1);
 
 fillFreeLines();
-debugger;
+
 	return cells;
 }
 
@@ -203,27 +202,44 @@ function listener(event, i, j, cell) {
   calcWeights(i, j, PLAYER);
 
 	const win = checkField(PLAYER);
-  win ? console.log("player WIN") : computerStep() ? console.log("computer WIN") : console.log("next run");
+  //win ? console.log("player WIN") : computerStep() ? console.log("computer WIN") : console.log("next run");
+    if (win) {
+      console.log("player WIN");
+    } else if (computerStep()) {
+      console.log("computer WIN")
+    } else if(steps < SIZE * SIZE){
+      console.log("next run");
+    }
 }
 
 function computerStep() {
 //  const pos = checkFree();
-  const pos = aiMove();
-  console.log(pos[0] + ", " + pos[1]);
-  
-  if(pos) {
-  	cells[pos[0] * SIZE + pos[1]].textContent = AI_SYMBOL
-  } else {
-  	console.log("DRAW");
-    return;
-  }
-  positions[pos[0]][pos[1]] = AI;
-  steps++;
-  releaseFreeCell(pos[0], pos[1], freeLines);
+if (steps < SIZE * SIZE) {
+    const pos = aiMove();
+    console.log(pos[0] + ", " + pos[1]);
+    
+      
+    if(pos) {
+      cells[pos[0] * SIZE + pos[1]].textContent = AI_SYMBOL
+    } else {
+      console.log("DRAW");
+      return;
+    }
 
-  calcWeights(pos[0], pos[1], AI);
-	const win = checkField(AI);
-  return win;
+    positions[pos[0]][pos[1]] = AI;
+    steps++;
+    releaseFreeCell(pos[0], pos[1], freeLines);
+
+    calcWeights(pos[0], pos[1], AI);
+    const win = checkField(AI);
+    if (steps >= SIZE * SIZE && !win) {
+      console.log("DRAW");
+    }
+    return win;
+  } else { 
+  console.log("DRAW");
+    return false;
+}  
 }
 
 // пересчет массива "весов" каждой линии. после каждого хода
@@ -262,13 +278,13 @@ function aiMove() {
   sortedWeights.sort((a,b) => (a - b));
 
   let mostDangerousLine = SIZE;
-  
+
   let index = 1;
     do {
-    mostDangerousLine = weights.indexOf(sortedWeights[sortedWeights.length - index] );
-    index++;
-  } while (freeLines[mostDangerousLine].length == 0 || index < MAIN_DIAGONAL)
-  
+      mostDangerousLine = weights.indexOf(sortedWeights[sortedWeights.length - index] );
+      index++;
+  } while (freeLines[mostDangerousLine].length == 0 && index < MAIN_DIAGONAL)
+
 
   //let mostHopefullLine = weights.indexOf(sortedWeights[0]);
   let mostHopefullLine = 0;
@@ -277,7 +293,7 @@ function aiMove() {
   do {
     mostHopefullLine = weights.indexOf(sortedWeights[index] );
     index++;
-  } while (freeLines[mostHopefullLine].length == 0 || index < MAIN_DIAGONAL)
+  } while (freeLines[mostHopefullLine].length == 0 && index < MAIN_DIAGONAL)
 
   
   /**
@@ -289,16 +305,19 @@ function aiMove() {
   
 // выбор : отбиваться или попробовать победить.
   let pickedLine = mostHopefullLine;
+  
   if (freeLines[mostHopefullLine].length == 0) {
     pickedLine = mostDangerousLine;
   } else if(freeLines[mostDangerousLine].length == 0){
     pickedLine  = mostHopefullLine;
   } else{
-    pickedLine = Math.abs(mostHopefullLine) > Math.abs(mostDangerousLine) || sortedWeights[mostHopefullLine] < (1.01 - SIZE) 
+     
+    pickedLine = Math.abs(weights[mostHopefullLine]) < Math.abs(weights[mostDangerousLine]) 
+                  || weights[mostDangerousLine] < (1.01 - SIZE) 
     ? 
-    mostHopefullLine 
+    mostDangerousLine 
     : 
-    mostDangerousLine;
+    mostHopefullLine;
   }
 
     //debugger;
@@ -310,17 +329,7 @@ let theAiCell = freeCells[Math.floor(Math.random() * freeCells.length)];
 if (theAiCell != undefined){
   return theAiCell;
 } else {
-  // выбранная линия "занята" и хода АИ не происходит.
-  // так получается из-за изменения веса диагоналей.
-
-  mostDangerousLine = weights.indexOf(sortedWeights[sortedWeights.length -2]);
-  mostHopefullLine = weights.indexOf(sortedWeights[1]);
-  pickedLine = Math.abs(mostHopefullLine) > Math.abs(mostDangerousLine) && sortedWeights[1] < -1 *(SIZE - 1.1) ? mostHopefullLine : mostDangerousLine;
-  freeCells = getFreeCellsFromLine(pickedLine);
-  //второй раз такой баг совсем маловероятен
-  theAiCell = freeCells[Math.floor(Math.random() * freeCells.length)];
-  return theAiCell;
-
+  ;
 }
 
 }
@@ -350,7 +359,10 @@ function getFreeCellsFromLine(pickedLine){
   return _freeCells;
 }
 
-
+/**
+ * функция определения победителя
+ * @param {*} value 
+ */
 function checkField(value) {
   return weights.some( w => value > 0 ? w >= value * SIZE : w <= value * SIZE);
 
