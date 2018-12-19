@@ -263,9 +263,8 @@ function aiMove() {
 
   let mostDangerousLine = SIZE;
   
-
-  do {
-    let index = 1;
+  let index = 1;
+    do {
     mostDangerousLine = weights.indexOf(sortedWeights[sortedWeights.length - index] );
     index++;
   } while (freeLines[mostDangerousLine].length == 0 || index < MAIN_DIAGONAL)
@@ -273,9 +272,9 @@ function aiMove() {
 
   //let mostHopefullLine = weights.indexOf(sortedWeights[0]);
   let mostHopefullLine = 0;
-
+  
+  index = 0;
   do {
-    let index = 0;
     mostHopefullLine = weights.indexOf(sortedWeights[index] );
     index++;
   } while (freeLines[mostHopefullLine].length == 0 || index < MAIN_DIAGONAL)
