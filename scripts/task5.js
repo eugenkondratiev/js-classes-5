@@ -40,9 +40,11 @@ const positions = [];
 const PLAYER = 1;
 const AI = -1;
 const FREE_CELL = 0;
+const INDEX_OF_ERROR = -1;
 
 const weights = []; 
 const freeLines = [];
+
 /*
   weights массив весов. для удобства пробега по нему - одномерный.
   SIZE элементов рядов, обратная диагональ, SIZE элементов колонок и главная диагональ.
@@ -97,6 +99,21 @@ function createFreeLine(i = 0, type = ROW) {
   return row;
 }
 
+//функция удаляет элемент с нужной позицией из массива заданной линии.
+function releaseFreeCelllfromLine(pos, freeCellsArray) {
+  if (freeCellsArray.length == 0) {
+    return;
+  }
+  for (let index = 0; index < freeCellsArray.length; index++) {
+    if (pos[0] == freeCellsArray[index][0] && pos[1] == freeCellsArray[index][1]) {
+      freeCellsArray.splice( index, 1 );
+      return;
+    }
+
+  }
+}
+
+//функция заполняет массив свободных полей.
 function fillFreeLines() {
   for (let i = 0; i < SIZE; i++) {
     freeLines.push(createFreeLine(i, ROW));
@@ -108,6 +125,22 @@ function fillFreeLines() {
   }
 
   freeLines.push(createFreeLine(0, MAIN_DIAGONAL));
+}
+//функция ищет и удаляет поле во вложенных массивах массива свободных полей 
+function releaseFreeCell(i, j, freeLines) {
+  const _pos = [i, j];
+  // ряд
+  releaseFreeCelllfromLine(_pos, freeLines[i]);
+
+  //столбец
+  releaseFreeCelllfromLine(_pos, freeLines[j + COLUMNS]);
+
+  if ( i == j) {// MAIN_DIAGONAL
+    releaseFreeCelllfromLine(_pos, freeLines[MAIN_DIAGONAL]);
+  }
+  if (i == SIZE - j -1) { //BACK_DIAGONAL
+    releaseFreeCelllfromLine(_pos, freeLines[BACK_DIAGONAL]);
+  }
 }
 
 
@@ -166,7 +199,7 @@ function listener(event, i, j, cell) {
   cell.textContent = PLAYER_SYMBOL;
   positions[i][j] = PLAYER;
   steps++;
- 
+  releaseFreeCell(i, j, freeLines);
   calcWeights(i, j, PLAYER);
 
 	const win = checkField(PLAYER);
@@ -186,6 +219,8 @@ function computerStep() {
   }
   positions[pos[0]][pos[1]] = AI;
   steps++;
+  releaseFreeCell(pos[0], pos[1], freeLines);
+
   calcWeights(pos[0], pos[1], AI);
 	const win = checkField(AI);
   return win;
@@ -226,12 +261,48 @@ function aiMove() {
   weights.forEach((w,i) => (sortedWeights.push(w)));
   sortedWeights.sort((a,b) => (a - b));
 
-  let mostDangerousLine = weights.indexOf(sortedWeights[sortedWeights.length -1] );
-  let mostHopefullLine = weights.indexOf(sortedWeights[0]);
-   
+  let mostDangerousLine = SIZE;
+  
+
+  do {
+    let index = 1;
+    mostDangerousLine = weights.indexOf(sortedWeights[sortedWeights.length - index] );
+    index++;
+  } while (freeLines[mostDangerousLine].length == 0 || index < MAIN_DIAGONAL)
+  
+
+  //let mostHopefullLine = weights.indexOf(sortedWeights[0]);
+  let mostHopefullLine = 0;
+
+  do {
+    let index = 0;
+    mostHopefullLine = weights.indexOf(sortedWeights[index] );
+    index++;
+  } while (freeLines[mostHopefullLine].length == 0 || index < MAIN_DIAGONAL)
+
+  
+  /**
+   * 
+   * тут нужно найти опасную или перспективную линию с пустыми полями.
+   * т.е. перебирать пока не найдешь или пока не поределиг ее отсутствие.
+   */
+
+  
 // выбор : отбиваться или попробовать победить.
-  let pickedLine = Math.abs(mostHopefullLine) > Math.abs(mostDangerousLine) && sortedWeights[0] < (1.1 - SIZE) ? mostHopefullLine : mostDangerousLine;
-  //debugger;
+  let pickedLine = mostHopefullLine;
+  if (freeLines[mostHopefullLine].length == 0) {
+    pickedLine = mostDangerousLine;
+  } else if(freeLines[mostDangerousLine].length == 0){
+    pickedLine  = mostHopefullLine;
+  } else{
+    pickedLine = Math.abs(mostHopefullLine) > Math.abs(mostDangerousLine) || sortedWeights[mostHopefullLine] < (1.01 - SIZE) 
+    ? 
+    mostHopefullLine 
+    : 
+    mostDangerousLine;
+  }
+
+    //debugger;
   let freeCells = getFreeCellsFromLine(pickedLine);
 
 
