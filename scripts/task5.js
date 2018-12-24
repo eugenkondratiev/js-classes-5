@@ -20,8 +20,6 @@ https://jsfiddle.net/7a2ngzm0/ в примере по ссылке я напис
 6) сделайте возможность, чтобы иногда первым ходил компьютер или просто это было случайно (50% первый игрок, 50% компьютер)
 */
 
-//  в целом работает адекватно. и еще надо сделать пункт 6.
-
 //"use strict";
 console.clear();
 const CELL_SIZE = 100;
@@ -32,7 +30,8 @@ const CELL_STYLES = {
   textAlign : "center",
   fontSize : "50px"
 };
-const SIZE = 3;
+
+const SIZE = 5;
 const HOT_SPOT = Math.round((SIZE - 1) / 2);
 const positions = [];
 const PLAYER = 1;
@@ -61,6 +60,38 @@ const AI_SYMBOL = PLAYER_SYMBOL == "X" ? "O" : "X";
 
 // const PLAYER_SYMBOL =  "X";
 // const AI_SYMBOL =  "O";
+
+function checkForDraw() {
+  const linesOccupied = [];
+  let factOfDraw = false;
+  if (linesOccupied.length == 0) {
+    //fill Array for the first time if its empty;
+    for (let i = 0; i < SIZE * 2 + 2 ; i++) {
+      linesOccupied[i] = Array.from({length: SIZE}, () => [false, false]);
+    }    
+  }
+  function isDraw(){
+      return factOfDraw;
+  }
+
+  isDraw.nextMove = function(i, j, player){
+    const index = player == AI ? 0 : PLAYER;
+      linesOccupied[i][j][index] = true;
+      linesOccupied[j + COLUMNS][i][index] = true;
+      if (i == j) linesOccupied[MAIN_DIAGONAL][i][index] = true;
+      if (i == SIZE - j - 1) linesOccupied[BACK_DIAGONAL][i][index] = true;
+
+      //check if all lines are occupied by both players
+     factOfDraw = linesOccupied.reduce(function(acc, line){
+       return acc && line.some( cell => cell[0]) && line.some(cell => cell[1]);
+     }, true);   
+  } 
+
+  return isDraw;
+}
+
+
+isDraw = checkForDraw();
 
 
 const cells = createField(SIZE); // "точка входа"
@@ -192,20 +223,31 @@ function setStyle(obj, styles){
 
 function listener(event, i, j, cell) {
     //  - баг затирания 
-    if (cell.textContent == PLAYER_SYMBOL || cell.textContent == AI_SYMBOL ){
+    if  (steps >= SIZE * SIZE || cell.textContent == PLAYER_SYMBOL || cell.textContent == AI_SYMBOL ){
         return;
     }
   cell.textContent = PLAYER_SYMBOL;
   positions[i][j] = PLAYER;
   steps++;
+  isDraw.nextMove(i, j, PLAYER);
   releaseFreeCell(i, j, freeLines);
   calcWeights(i, j, PLAYER);
+  
+
+  if (steps >= SIZE * SIZE && !win) {
+    console.log("DRAW");
+
+  }
 
 	const win = checkField(PLAYER);
   //win ? console.log("player WIN") : computerStep() ? console.log("computer WIN") : console.log("next run");
     if (win) {
       console.log("player WIN");
-    } else if (computerStep()) {
+    } else if(isDraw()){
+        steps = SIZE * SIZE;
+        console.log("DRAW");
+      }
+     else if (computerStep()) {
       console.log("computer WIN")
     } else if(steps < SIZE * SIZE){
       console.log("next run");
@@ -228,9 +270,17 @@ if (steps < SIZE * SIZE) {
 
     positions[pos[0]][pos[1]] = AI;
     steps++;
+    
+    if(isDraw()){
+      steps = SIZE * SIZE;
+      console.log("DRAW");
+    }
+
     releaseFreeCell(pos[0], pos[1], freeLines);
 
     calcWeights(pos[0], pos[1], AI);
+    isDraw.nextMove(pos[0], pos[1], AI);
+
     const win = checkField(AI);
     if (steps >= SIZE * SIZE && !win) {
       console.log("DRAW");
